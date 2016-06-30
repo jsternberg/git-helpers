@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -o pipefail
+exitcode=0
+
+# Find the default branch and default to master if one wasn't set.
+default_branch=$(git config git-prune.default-branch)
+[ $? -ne 0 ] && default_branch="master"
+
+# Look through each branch that has been merged into the default branch.
+# Exclude the current branch since we can't remove a branch we are currently on.
+for branch in $(git branch --merged "$default_branch" | grep -v '*'); do
+  # Skip past the default branch.
+  [[ $branch = $default_branch ]] && continue
+
+  # Only remove branches if they have a remote set so we only delete
+  # branches that had a pull request created and merged for them.
+  if git config "branch.$branch.remote" > /dev/null; then
+    # If the upstream branch has been pruned, then remove this branch.
+    git rev-parse --abbrev-ref --symbolic-full-name "$branch@{u}" &> /dev/null || git branch -D "$branch"
+    [ $? -ne 0 ] && exitcode=$((exitcode+1))
+  fi
+done
+exit $exitcode
