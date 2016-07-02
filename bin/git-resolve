@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -o pipefail
+
+editor=$(git config core.editor)
+if [ $? -ne 0 ]; then
+  editor=${EDITOR:-vi}
+fi
+
+set -e
+
+git_dir=$(git rev-parse --git-dir)
+if [ ! -e "$git_dir/MERGE_MODE" ]; then
+  echo "Nothing to resolve."
+  exit 0
+fi
+
+exitcode=0
+files=$(git status --porcelain | grep '^UU' | sed 's/^UU //g')
+for f in $files; do
+  vim "$f"
+  if ! grep '<<<<<<<\|>>>>>>>\|=======' "$f"; then
+    git add "$f"
+  else
+    exitcode=$((exitcode+1))
+    echo "Failed to resolve conflicts in $f" 1>&2
+  fi
+done
+
+[ $exitcode -eq 0 ] || exit $exitcode
+
+if [ -e "$git_dir/MERGE_MODE" ]; then
+  git commit
+fi
