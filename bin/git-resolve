@@ -10,7 +10,7 @@ fi
 set -e
 
 git_dir=$(git rev-parse --git-dir)
-if [ ! -e "$git_dir/MERGE_MODE" ]; then
+if [ ! -e "$git_dir/MERGE_MODE" ] && [ ! -e "$git_dir/ORIG_HEAD" ]; then
   echo "Nothing to resolve."
   exit 0
 fi
@@ -31,4 +31,8 @@ done
 
 if [ -e "$git_dir/MERGE_MODE" ]; then
   git commit
+elif [ -e "$git_dir/CHERRY_PICK_HEAD" ]; then
+  git cherry-pick --continue
+elif [ -e "$git_dir/ORIG_HEAD" ]; then
+  git rebase --continue
 fi
