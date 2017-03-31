@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -eo pipefail
+
+if [ ! -e ~/.git_history ]; then
+  mkdir -p ~/.git_history
+fi
+
+history_file=~/.git_history/$(git rev-parse --show-toplevel | sed "s@^$HOME/@@" | sed 's@/@%2F@g')
+
+git checkout $@
+echo "$(git symbolic-ref HEAD) $(date +%s)" >> $history_file
+
+lines=$(wc -l < $history_file)
+if [ $lines -gt 100 ]; then
+  sort -u -t ' ' -k1,1 $history_file | while IFS= read -r line; do
+    # Find the last reference to each branch and output it to the file.
+    branch=$(echo "$line" | awk '{print $1}')
+    grep -e "^$branch " $history_file | tail -n 1
+  done > $history_file.compact
+  sort -n -k2,2 $history_file.compact
+  rm $history_file.compact
+fi
