@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -eo pipefail
+
+history_file=~/.git_history/$(git rev-parse --show-toplevel | sed "s@^$HOME/@@" | sed 's@/@%2F@g')
+if [ ! -e $history_file ]; then
+  exit 0
+fi
+
+tmpfile=$(mktemp -t tmp)
+trap "rm -f '$tmpfile'" EXIT
+
+# Find the last reference to each branch and output it to the temporary file.
+sort -u -t ' ' -k1,1 "$history_file" | while IFS= read -r line; do
+  branch=$(echo "$line" | awk '{print $1}')
+  grep -e "^$branch " "$history_file" | tail -n 1
+done > "$tmpfile"
+sort -n -k2,2 "$tmpfile" | awk '{print $1}'
