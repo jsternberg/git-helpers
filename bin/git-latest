@@ -2,7 +2,7 @@
 
 set -eo pipefail
 
-history_file=~/.git_history/$(git rev-parse --show-toplevel | sed "s@^$HOME/@@" | sed 's@/@%2F@g')
+history_file="$(git rev-parse --git-dir)/history"
 if [ ! -e $history_file ]; then
   exit 0
 fi
