@@ -1,0 +1,17 @@
+#!/bin/bash
+
+git_dir=$(git rev-parse --git-dir)
+[ $? -ne 0 ] && exit 1
+
+while read local_ref local_sha remote_ref remote_sha
+do
+  # Retrieve the basename from the remote ref and ensure it doesn't
+  # match one of the protected branches.
+  remote_branch=$(basename $remote_ref)
+  if [ -e "$git_dir/protected-branches/$remote_branch" ]; then
+    echo >&2 "Remote branch is protected, not pushing"
+    exit 1
+  fi
+done
+
+exit 0

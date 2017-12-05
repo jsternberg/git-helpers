@@ -1,0 +1,50 @@
+#!/bin/bash
+
+print_help() {
+  echo "Usage: git-protect [-u] <branch-name>"
+}
+
+git_dir=$(git rev-parse --git-dir)
+[ $? -ne 0 ] && exit 1
+protect_path=$git_dir/protected-branches
+
+action="protect"
+while getopts ":uh" opt; do
+  case ${opt} in
+    h)
+      print_help
+      exit 0
+      ;;
+    u)
+      action="unprotect"
+      ;;
+    \?)
+      print_help
+      exit 1
+  esac
+done
+shift $((OPTIND -1))
+
+if [ $# -gt 0 ]; then
+  protected_branch=$1
+else
+  protected_branch=$(git symbolic-ref --short HEAD)
+  [ $? -ne 0 ] && exit 1
+fi
+
+if [ ! -e "$protect_path" ]; then
+  mkdir "$protect_path"
+elif [ ! -d "$protect_path" ]; then
+  echo >&2 "$protect_path is not a directory, aborting." && exit 1
+fi
+
+case ${action} in
+  protect)
+    if [ ! -e "$protect_path/$protected_branch" ]; then
+      touch "$protect_path/$protected_branch"
+    fi
+    ;;
+  unprotect)
+    rm -f "$protect_path/$protected_branch"
+    ;;
+esac
